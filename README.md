@@ -1,2 +1,2 @@
-# FotoCaylak V2 Foto Editor App
+# FotoCaylak V2 Foto Editor 
 FotoÇaylak V2, FotoÇaylak'ın Versiyon 2'sidir. Bu sürüm, FotoÇaylak'ın en iyi ücretsiz sürümü olarak geçmektedir çünkü ücretsiz bir foto editöre göre aşırı fazla özellik eklenmiştir. FotoÇaylak V2, fotoğrafın görsel kalitesini seçer, geniş çerçeve seçenekleriyle (9 tane) ve geniş sticker kütüphanesiyle (18 tane) en dikkat çeken fotoğraf düzenleyeciler arasında yer alır.
