@@ -1,2 +1,2 @@
-# FotoCaylak V2-Foto-Editor-App
-FotoÇaylak 2025 yılında Çaylak Oyunda tarafından yapılmış bir uygulamadır. Bu uygulama fotoğraflarınızı en kaliteli şekilde düzenlemenizi sağlar. Geniş renk filtreleri (10 tane), kırpma seçenekleri (4.3 ve 16.9) ve metin ekleme özelliği ile sizin için en iyi ve ideal tercihtir. FotoÇaylak, fotoğrafları en yüksek çözünürlükte kaydeder.
+# FotoCaylak V2 Foto Editor App
+FotoÇaylak V2, FotoÇaylak'ın Versiyon 2'sidir. Bu sürüm, FotoÇaylak'ın en iyi ücretsiz sürümü olarak geçmektedir çünkü ücretsiz bir foto editöre göre aşırı fazla özellik eklenmiştir. FotoÇaylak V2, fotoğrafın görsel kalitesini seçer, geniş çerçeve seçenekleriyle (9 tane) ve geniş sticker kütüphanesiyle (18 tane) en dikkat çeken fotoğraf düzenleyeciler arasında yer alır.
