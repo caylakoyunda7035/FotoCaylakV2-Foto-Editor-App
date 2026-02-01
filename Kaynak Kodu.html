@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FotoÇaylak V2</title>
+<style>
+  :root{
+    --bg:#0f1218; --panel:#161a22; --card:#1c2230; --border:#2a3342;
+    --text:#e6edf7; --muted:#8a94a6; --accent:#3b82f6; --accent-2:#22c55e; --danger:#ef4444;
+    --btn:#202739; --btn-hover:#283048; --canvas-bg:#000;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#111723,var(--panel));border-bottom:1px solid var(--border);padding:16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  header h1{margin:0;font-size:18px;letter-spacing:.3px}
+  .container{max-width:960px;margin:0 auto;padding:12px;display:grid;gap:12px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .title{font-size:14px;color:var(--muted);margin:0 0 6px;display:flex;align-items:center;gap:8px}
+  .title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .canvas-wrap{background:#0b0f16;border:1px solid var(--border);border-radius:12px;padding:8px}
+  canvas{display:block;width:100%;height:auto;border-radius:8px;background:var(--canvas-bg);touch-action:none}
+  .toolbar{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+  .toolbar.small{grid-template-columns:repeat(3,1fr)}
+  .filters{display:grid;gap:8px;grid-template-columns:repeat(5,1fr)}
+  @media (max-width:640px){
+    .filters{grid-template-columns:repeat(3,1fr)}
+    .toolbar{grid-template-columns:repeat(2,1fr)}
+    .toolbar.small{grid-template-columns:repeat(2,1fr)}
+  }
+  button{appearance:none;border:1px solid var(--border);background:var(--btn);color:var(--text);padding:10px 12px;border-radius:10px;font-size:14px;cursor:pointer;transition:transform .06s ease,background .15s ease}
+  button:hover{background:var(--btn-hover)}
+  button:active{transform:scale(.98)}
+  button.primary{background:var(--accent);border-color:transparent;color:#fff}
+  button.success{background:var(--accent-2);border-color:transparent;color:#06130a}
+  button.danger{background:var(--danger);border-color:transparent;color:#fff}
+  button[disabled]{opacity:.5;cursor:not-allowed}
+  .filter-btn{font-size:12px;padding:8px}
+  .filter-btn.active{outline:2px solid var(--accent);background:#24304a}
+  .row{display:grid;gap:8px;grid-template-columns:1fr 1fr}
+  input[type="file"],input[type="text"],select{width:100%;padding:10px 12px;background:var(--btn);border:1px solid var(--border);border-radius:10px;color:var(--text)}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px}
+  .footer{text-align:center;color:var(--muted);font-size:12px;padding-bottom:20px}
+</style>
+</head>
+<body>
+  <header>
+    <h1>FotoÇaylak V2 (Foto Editor)</h1>
+    <button id="themeToggle">🌗 Tema</button>
+  </header>
+
+  <div class="container">
+    <!-- Dosya -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Dosya</p>
+      <div class="row">
+        <input type="file" id="fileInput" accept="image/*" />
+        <button id="saveBtn" class="primary" disabled>Kaydet</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <select id="formatSelect">
+          <option value="png">PNG</option>
+          <option value="jpeg">JPG</option>
+          <option value="webp">WEBP</option>
+        </select>
+        <select id="qualitySelect" title="Sadece JPEG/WEBP için">
+          <option value="0.92">Kalite: %92</option>
+          <option value="0.8">Kalite: %80</option>
+          <option value="0.7">Kalite: %70</option>
+          <option value="0.6">Kalite: %60</option>
+        </select>
+      </div>
+      <p class="hint">Resim yükledikten sonra düzenleyebilir ve seçtiğin formatta kaydedebilirsin.</p>
+    </div>
+
+    <!-- Tuval -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Tuval</p>
+      <div class="canvas-wrap">
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Filtreler</p>
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-filter="none">Orijinal</button>
+        <button class="filter-btn" data-filter="grayscale(100%)">Siyah-Beyaz</button>
+        <button class="filter-btn" data-filter="sepia(100%)">Sepya</button>
+        <button class="filter-btn" data-filter="contrast(150%)">Kontrast</button>
+        <button class="filter-btn" data-filter="brightness(120%)">Parlak</button>
+        <button class="filter-btn" data-filter="invert(100%)">Ters</button>
+        <button class="filter-btn" data-filter="saturate(200%)">Doygun</button>
+        <button class="filter-btn" data-filter="hue-rotate(90deg)">Renk Döndür</button>
+        <button class="filter-btn" data-filter="blur(2px)">Bulanık</button>
+        <button class="filter-btn" data-filter="drop-shadow(4px 4px 2px black)">Gölge</button>
+        <button class="filter-btn" data-filter="brightness(95%) sepia(5%)">Netleştir</button>
+        <button class="filter-btn" data-filter="sepia(60%) contrast(120%) saturate(120%)">Film</button>
+        <button class="filter-btn" data-filter="contrast(130%) saturate(120%) brightness(105%)">HDR-lite</button>
+        <button class="filter-btn" data-filter="hue-rotate(200deg) brightness(105%)">Cool</button>
+        <button class="filter-btn" data-filter="hue-rotate(20deg) brightness(105%)">Warm</button>
+      </div>
+      <p class="hint">Filtreler mevcut görüntüye uygulanır. Döndürme veya kırpma yaptıktan sonra da doğru sonuç verir.</p>
+    </div>
+
+    <!-- Düzenleme -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Düzenleme</p>
+      <div class="toolbar">
+        <button id="rotateLeft" disabled>⟲ Sola Döndür</button>
+        <button id="rotateRight" disabled>⟳ Sağa Döndür</button>
+        <button id="rotateDiagLeft" disabled>⤺ Çapraz Sola</button>
+        <button id="rotateDiagRight" disabled>⤻ Çapraz Sağa</button>
+        <button id="crop1024x512" disabled>✂️ 1024×512</button>
+        <button id="crop512x256" disabled>✂️ 512×256</button>
+      </div>
+      <div class="toolbar" style="margin-top:8px">
+        <button id="crop169" disabled>✂️ 16:9</button>
+        <button id="crop43" disabled>✂️ 4:3</button>
+        <button id="crop11" disabled>✂️ 1:1</button>
+        <button id="crop916" disabled>✂️ 9:16</button>
+        <button id="undoBtn" disabled>↩️ Geri Al</button>
+        <button id="redoBtn" disabled>↪️ İleri Al</button>
+      </div>
+      <div class="toolbar small" style="margin-top:8px">
+        <button id="resetBtn" class="danger" disabled>Temizle</button>
+      </div>
+    </div>
+
+    <!-- Metin -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Metin ekleme</p>
+      <div class="row">
+        <input type="text" id="textInput" placeholder="Metin yaz (merkeze eklenir)" />
+        <select id="textStyle">
+          <option value="plain">Düz</option>
+          <option value="outline">Dış Çizgi</option>
+          <option value="neon">Neon</option>
+          <option value="gradient">Gradient</option>
+        </select>
+      </div>
+      <div class="toolbar small" style="margin-top:8px">
+        <button id="addTextBtn" class="success" disabled>📝 Metin Ekle</button>
+      </div>
+      <p class="hint">Basit metin ekleme: yaz ve ekle. (Varsayılan konum: tuvalin merkezi)</p>
+    </div>
+
+    <!-- Çerçeveler -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Çerçeveler (9)</p>
+      <div class="toolbar" id="frames">
+        <button data-frame="classic" disabled>Klasik</button>
+        <button data-frame="modern" disabled>Modern</button>
+        <button data-frame="social" disabled>Sosyal</button>
+        <button data-frame="minimal" disabled>Minimal</button>
+        <button data-frame="gradient" disabled>Gradient</button>
+        <button data-frame="dotted" disabled>Noktalı</button>
+        <button data-frame="dashed" disabled>Kesik Çizgi</button>
+        <button data-frame="retro" disabled>Retro</button>
+        <button data-frame="funky" disabled>Funky</button>
+      </div>
+      <p class="hint">Şablonlar Canvas ile çizilir; Pro’daki gelişmiş kütüphaneler yoktur.</p>
+    </div>
+
+    <!-- Stickerler -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Stickerler (18)</p>
+      <div class="toolbar" id="stickers">
+        <button disabled>⭐</button><button disabled>❤️</button><button disabled>😊</button><button disabled>🔥</button><button disabled>👍</button><button disabled>🌸</button>
+        <button disabled>🎉</button><button disabled>🐱</button><button disabled>🐶</button><button disabled>🍕</button><button disabled>☕</button><button disabled>🎵</button>
+        <button disabled>⚽</button><button disabled>🏀</button><button disabled>🚀</button><button disabled>🌍</button><button disabled>🕶️</button><button disabled>💎</button>
+      </div>
+      <p class="hint">Stickerler emoji tabanlıdır ve merkeze eklenir.</p>
+    </div>
+
+    <div class="footer">© FotoÇaylak V2 — Ücretsiz, güçlü ve keyifli düzenleme</div>
+  </div>
+
+<script>
+  // Canvas ve durum
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let history = [], future = [];
+  let imageLoaded = false;
+  let currentFilter = 'none';
+
+  // Elemanlar
+  const fileInput = document.getElementById('fileInput');
+  const saveBtn = document.getElementById('saveBtn');
+  const formatSelect = document.getElementById('formatSelect');
+  const qualitySelect = document.getElementById('qualitySelect');
+
+  const rotateLeftBtn = document.getElementById('rotateLeft');
+  const rotateRightBtn = document.getElementById('rotateRight');
+  const rotateDiagLeftBtn = document.getElementById('rotateDiagLeft');
+  const rotateDiagRightBtn = document.getElementById('rotateDiagRight');
+
+  const crop1024x512Btn = document.getElementById('crop1024x512');
+  const crop512x256Btn = document.getElementById('crop512x256');
+  const crop169Btn = document.getElementById('crop169');
+  const crop43Btn = document.getElementById('crop43');
+  const crop11Btn = document.getElementById('crop11');
+  const crop916Btn = document.getElementById('crop916');
+
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const addTextBtn = document.getElementById('addTextBtn');
+  const textInput = document.getElementById('textInput');
+  const textStyle = document.getElementById('textStyle');
+
+  const framesWrap = document.getElementById('frames');
+  const stickersWrap = document.getElementById('stickers');
+
+  const themeToggle = document.getElementById('themeToggle');
+
+  // Başlangıç placeholder
+  function initCanvasPlaceholder() {
+    canvas.width = 800; canvas.height = 500;
+    ctx.fillStyle = '#0b0f16';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#8a94a6';
+    ctx.font = '16px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Resim yükleyin', canvas.width / 2, canvas.height / 2);
+  }
+  initCanvasPlaceholder();
+
+  // Kontrolleri aç/kapat
+  function setControlsEnabled(state) {
+    [
+      saveBtn, rotateLeftBtn, rotateRightBtn, rotateDiagLeftBtn, rotateDiagRightBtn,
+      crop1024x512Btn, crop512x256Btn, crop169Btn, crop43Btn, crop11Btn, crop916Btn,
+      undoBtn, redoBtn, resetBtn, addTextBtn,
+      ...framesWrap.querySelectorAll('button'),
+      ...stickersWrap.querySelectorAll('button')
+    ].forEach(b => b.disabled = !state);
+  }
+
+  // Geçmiş yönetimi
+  function pushHistory() {
+    try {
+      const snap = canvas.toDataURL('image/png');
+      history.push(snap);
+      if (history.length > 80) history.shift();
+      future.length = 0;
+      updateUndoRedo();
+    } catch (e) {}
+  }
+  function updateUndoRedo() {
+    undoBtn.disabled = history.length <= 1;
+    redoBtn.disabled = future.length === 0;
+  }
+  function loadSnapshot(dataURL) {
+    const i = new Image();
+    i.onload = () => {
+      canvas.width = i.width; canvas.height = i.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(i, 0, 0);
+    };
+    i.src = dataURL;
+  }
+
+  // Dosya yükleme
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      imageLoaded = true;
+      currentFilter = 'none';
+      pushHistory();
+      setControlsEnabled(true);
+      setActiveFilterButton('none');
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
+
+  // Filtreler
+  function applyFilter(filterCSS) {
+    const srcURL = canvas.toDataURL('image/png');
+    const srcImg = new Image();
+    srcImg.onload = () => {
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.filter = filterCSS || 'none';
+      ctx.drawImage(srcImg, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+      pushHistory();
+    };
+    srcImg.src = srcURL;
+  }
+  function setActiveFilterButton(filter) {
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+  }
+  document.getElementById('filters').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.filter-btn');
+    if (!btn || !imageLoaded) return;
+    const filter = btn.dataset.filter || 'none';
+    currentFilter = filter;
+    setActiveFilterButton(filter);
+    applyFilter(filter);
+  });
+
+  // Döndürme
+  function rotate(deg) {
+    const temp = document.createElement('canvas');
+    const tctx = temp.getContext('2d');
+    if (deg % 180 !== 0) {
+      temp.width = canvas.height; temp.height = canvas.width;
+    } else {
+      temp.width = canvas.width; temp.height = canvas.height;
+    }
+    tctx.translate(temp.width / 2, temp.height / 2);
+    tctx.rotate(deg * Math.PI / 180);
+    tctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    canvas.width = temp.width; canvas.height = temp.height;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(temp, 0, 0);
+    if (currentFilter && currentFilter !== 'none') applyFilter(currentFilter); else pushHistory();
+  }
+  rotateLeftBtn.addEventListener('click', () => rotate(-90));
+  rotateRightBtn.addEventListener('click', () => rotate(90));
+  rotateDiagLeftBtn.addEventListener('click', () => rotate(-45));
+  rotateDiagRightBtn.addEventListener('click', () => rotate(45));
+
+  // Kırpma (oran)
+  function cropAspect(ax, ay) {
+    const w = canvas.width, h = canvas.height;
+    const target = ax / ay;
+    let newW = w, newH = h;
+    if (w / h > target) newW = h * target;
+    else newH = w / target;
+    const x = Math.round((w - newW) / 2);
+    const y = Math.round((h - newH) / 2);
+    const imgData = ctx.getImageData(x, y, Math.round(newW), Math.round(newH));
+    canvas.width = Math.round(newW);
+    canvas.height = Math.round(newH);
+    ctx.putImageData(imgData, 0, 0);
+    if (currentFilter && currentFilter !== 'none') applyFilter(currentFilter); else pushHistory();
+  }
+  crop169Btn.addEventListener('click', () => cropAspect(16, 9));
+  crop43Btn.addEventListener('click', () => cropAspect(4, 3));
+  crop11Btn.addEventListener('click', () => cropAspect(1, 1));
+  crop916Btn.addEventListener('click', () => cropAspect(9, 16));
+
+  // Kırpma (sabit boyut)
+  function cropFixed(targetW, targetH) {
+    if (canvas.width < targetW || canvas.height < targetH) {
+      targetW = Math.min(targetW, canvas.width);
+      targetH = Math.min(targetH, canvas.height);
+    }
+    const offsetX = Math.floor((canvas.width - targetW) / 2);
+    const offsetY = Math.floor((canvas.height - targetH) / 2);
+    const imageData = ctx.getImageData(offsetX, offsetY, targetW, targetH);
+    canvas.width = targetW; canvas.height = targetH;
+    ctx.putImageData(imageData, 0, 0);
+    if (currentFilter && currentFilter !== 'none') applyFilter(currentFilter); else pushHistory();
+  }
+  crop1024x512Btn.addEventListener('click', () => cropFixed(1024, 512));
+  crop512x256Btn.addEventListener('click', () => cropFixed(512, 256));
+
+  // Metin ekleme (stil seçenekleri)
+  function addText(text, style) {
+    if (!text) return;
+    ctx.save();
+    ctx.filter = 'none';
+    const size = Math.max(20, Math.floor(canvas.width * 0.05));
+    ctx.font = `${size}px system-ui, -apple-system, Segoe UI`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    if (style === 'plain') {
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 4; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1;
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    } else if (style === 'outline') {
+      ctx.lineWidth = Math.max(2, Math.floor(size * 0.08));
+      ctx.strokeStyle = '#000000';
+      ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    } else if (style === 'neon') {
+      ctx.fillStyle = '#39ff14';
+      ctx.shadowColor = '#39ff14';
+      ctx.shadowBlur = Math.floor(size * 0.25);
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    } else if (style === 'gradient') {
+      const textX = canvas.width / 2, textY = canvas.height / 2;
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+      gradient.addColorStop(0, '#3b82f6');
+      gradient.addColorStop(1, '#22c55e');
+      ctx.fillStyle = gradient;
+      ctx.fillText(text, textX, textY);
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(text, textX, textY);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    ctx.restore();
+    pushHistory();
+  }
+  addTextBtn.addEventListener('click', () => {
+    const t = textInput.value.trim();
+    addText(t, textStyle.value);
+  });
+
+  // Çerçeveler (9)
+  function drawFrame(type) {
+    ctx.save();
+    ctx.filter = 'none';
+    if (type === 'classic') {
+      ctx.lineWidth = Math.max(20, Math.floor(canvas.width * 0.02));
+      ctx.strokeStyle = '#8b5e3c';
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = Math.max(4, Math.floor(canvas.width * 0.005));
+      ctx.strokeStyle = '#d2b48c';
+      ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    } else if (type === 'modern') {
+      ctx.lineWidth = Math.max(16, Math.floor(canvas.width * 0.015));
+      ctx.strokeStyle = '#3b82f6';
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+      const s = Math.floor(canvas.width * 0.04);
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(0, 0, s, s);
+      ctx.fillRect(canvas.width - s, 0, s, s);
+      ctx.fillRect(0, canvas.height - s, s, s);
+      ctx.fillRect(canvas.width - s, canvas.height - s, s, s);
+    } else if (type === 'social') {
+      const barH = Math.max(30, Math.floor(canvas.height * 0.06));
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(0, 0, canvas.width, barH);
+      ctx.fillRect(0, canvas.height - barH, canvas.width, barH);
+      ctx.lineWidth = Math.max(8, Math.floor(canvas.width * 0.01));
+      ctx.strokeStyle = '#22c55e';
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    } else if (type === 'minimal') {
+      ctx.lineWidth = Math.max(4, Math.floor(canvas.width * 0.004));
+      ctx.strokeStyle = '#000';
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    } else if (type === 'gradient') {
+      ctx.lineWidth = Math.max(16, Math.floor(canvas.width * 0.015));
+      const g = ctx.createLinearGradient(0, 0, canvas.width, 0);
+      g.addColorStop(0, '#3b82f6'); g.addColorStop(1, '#9333ea');
+      ctx.strokeStyle = g;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    } else if (type === 'dotted') {
+      ctx.lineWidth = Math.max(8, Math.floor(canvas.width * 0.008));
+      ctx.setLineDash([2, 10]);
+      ctx.strokeStyle = '#ffffff';
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+      ctx.setLineDash([]);
+    } else if (type === 'dashed') {
+      ctx.lineWidth = Math.max(10, Math.floor(canvas.width * 0.01));
+      ctx.setLineDash([20, 10]);
+      ctx.strokeStyle = '#ff0000';
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+      ctx.setLineDash([]);
+    } else if (type === 'retro') {
+      ctx.lineWidth = Math.max(18, Math.floor(canvas.width * 0.018));
+      ctx.strokeStyle = '#ff9800';
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = Math.max(6, Math.floor(canvas.width * 0.006));
+      ctx.strokeStyle = '#ffd54f';
+      ctx.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
+    } else if (type === 'funky') {
+      ctx.lineWidth = Math.max(16, Math.floor(canvas.width * 0.015));
+      ctx.strokeStyle = '#00ffcc';
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+      const s = Math.floor(canvas.width * 0.05);
+      ctx.fillStyle = '#ff00ff';
+      ctx.fillRect(0, 0, s, s);
+      ctx.fillRect(canvas.width - s, canvas.height - s, s, s);
+      ctx.fillStyle = '#ffff00';
+      ctx.fillRect(canvas.width - s, 0, s, s);
+      ctx.fillRect(0, canvas.height - s, s, s);
+    }
+    ctx.restore();
+    pushHistory();
+  }
+  framesWrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || !imageLoaded) return;
+    const type = btn.dataset.frame;
+    drawFrame(type);
+  });
+
+  // Stickerler (18)
+  function addSticker(symbol) {
+    ctx.save();
+    ctx.filter = 'none';
+    const size = Math.floor(canvas.width * 0.12);
+    ctx.font = `${size}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(symbol, canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+    pushHistory();
+  }
+  stickersWrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || !imageLoaded) return;
+    addSticker(btn.textContent.trim());
+  });
+
+  // Undo/Redo
+  undoBtn.addEventListener('click', () => {
+    if (history.length > 1) {
+      const current = history.pop();
+      future.push(current);
+      loadSnapshot(history[history.length - 1]);
+      updateUndoRedo();
+    }
+  });
+  redoBtn.addEventListener('click', () => {
+    if (future.length) {
+      const next = future.pop();
+      history.push(next);
+      loadSnapshot(next);
+      updateUndoRedo();
+    }
+  });
+
+  // Kaydet
+  saveBtn.addEventListener('click', () => {
+    const format = formatSelect.value;
+    const quality = parseFloat(qualitySelect.value);
+    let mime = 'image/png';
+    let q = undefined;
+    if (format === 'jpeg') { mime = 'image/jpeg'; q = quality; }
+    else if (format === 'webp') { mime = 'image/webp'; q = quality; }
+
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL(mime, q);
+    a.download = 'duzenlenmis.' + format;
+    a.click();
+  });
+
+  // Reset
+  resetBtn.addEventListener('click', () => {
+    history.length = 0;
+    future.length = 0;
+    imageLoaded = false;
+    currentFilter = 'none';
+    setControlsEnabled(false);
+    setActiveFilterButton('none');
+    initCanvasPlaceholder();
+  });
+
+  // Tema toggle (Açık/Koyu)
+  themeToggle.addEventListener('click', () => {
+    const root = document.documentElement;
+    const currentBg = getComputedStyle(root).getPropertyValue('--bg').trim();
+    const isDark = currentBg === '#0f1218';
+    if (isDark) {
+      root.style.setProperty('--bg', '#f5f7fb');
+      root.style.setProperty('--panel', '#ffffff');
+      root.style.setProperty('--card', '#ffffff');
+      root.style.setProperty('--border', '#d9e0ea');
+      root.style.setProperty('--text', '#0b1220');
+      root.style.setProperty('--muted', '#5b6678');
+      root.style.setProperty('--btn', '#eef2f7');
+      root.style.setProperty('--btn-hover', '#e3e8ef');
+      root.style.setProperty('--canvas-bg', '#fff');
+    } else {
+      root.style.setProperty('--bg', '#0f1218');
+      root.style.setProperty('--panel', '#161a22');
+      root.style.setProperty('--card', '#1c2230');
+      root.style.setProperty('--border', '#2a3342');
+      root.style.setProperty('--text', '#e6edf7');
+      root.style.setProperty('--muted', '#8a94a6');
+      root.style.setProperty('--btn', '#202739');
+      root.style.setProperty('--btn-hover', '#283048');
+      root.style.setProperty('--canvas-bg', '#000');
+    }
+  });
+</script>
+</body>
+</html>
